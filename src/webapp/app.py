@@ -228,19 +228,55 @@ def get_ultimate_sr(symbol, interval):
 
 @app.route('/health')
 def health():
-    """Health check endpoint"""
+    """Health check endpoint with data freshness validation"""
     try:
         r.ping()
-        return jsonify({
-            'status': 'healthy',
+
+        # Check data freshness
+        now = int(datetime.now().timestamp())
+        max_age_seconds = 1800  # 30 minutes
+        warnings = []
+
+        # Check kline data freshness for BTCUSDT
+        latest = r.zrevrange('15.BTCUSDT', 0, 0, withscores=True)
+        if latest:
+            timestamp_ms = int(latest[0][1])
+            timestamp_s = timestamp_ms // 1000
+            age = now - timestamp_s
+
+            if age > max_age_seconds:
+                warnings.append(f'Kline data is stale ({age}s old)')
+        else:
+            warnings.append('No kline data found')
+
+        # Check S/R data freshness
+        sr_data = r.get('sr:technical:basic:15.BTCUSDT')
+        if sr_data:
+            sr_json = json.loads(sr_data)
+            sr_age = now - sr_json.get('timestamp', now)
+            if sr_age > 600:  # 10 minutes
+                warnings.append(f'S/R data is stale ({sr_age}s old)')
+        else:
+            warnings.append('No S/R data found')
+
+        response = {
+            'status': 'healthy' if not warnings else 'degraded',
             'redis': 'connected',
-            'timestamp': datetime.now().isoformat()
-        })
+            'timestamp': datetime.now().isoformat(),
+            'data_age_seconds': age if latest else None
+        }
+
+        if warnings:
+            response['warnings'] = warnings
+
+        return jsonify(response), 200 if not warnings else 200
+
     except Exception as e:
         return jsonify({
             'status': 'unhealthy',
             'redis': 'disconnected',
-            'error': str(e)
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 500
 
 

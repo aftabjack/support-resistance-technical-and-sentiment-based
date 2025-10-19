@@ -1,0 +1,33 @@
+# Systemd service file for SR Dashboard
+# Installation:
+#   1. Copy to: sudo cp scripts/sr-dashboard.service /etc/systemd/system/
+#   2. Edit paths: sudo nano /etc/systemd/system/sr-dashboard.service
+#   3. Reload: sudo systemctl daemon-reload
+#   4. Enable: sudo systemctl enable sr-dashboard
+#   5. Start: sudo systemctl start sr-dashboard
+#   6. Status: sudo systemctl status sr-dashboard
+#   7. Logs: sudo journalctl -u sr-dashboard -f
+
+[Unit]
+Description=Support/Resistance Dashboard - Kline Stream
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=danish
+Group=danish
+WorkingDirectory=/Users/danish/PycharmProjects/options_trading/live_sr_dashboard
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/usr/bin/python3 src/data_collection/bybit_kline_stream.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/Users/danish/PycharmProjects/options_trading/live_sr_dashboard/logs/kline_stream.log
+StandardError=append:/Users/danish/PycharmProjects/options_trading/live_sr_dashboard/logs/kline_stream.log
+
+# Restart on crash
+StartLimitInterval=200
+StartLimitBurst=10
+
+[Install]
+WantedBy=multi-user.target
