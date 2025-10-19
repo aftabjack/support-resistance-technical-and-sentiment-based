@@ -1,0 +1,29 @@
+{
+  "bybit": {
+    "testnet": false,
+    "channel_type": "linear"
+  },
+  "trading": {
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "intervals": ["1", "5", "15", "60", "240", "D"],
+    "candle_limit": 1000
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "db": 0
+  },
+  "webapp": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "debug": true
+  },
+  "detection": {
+    "mode": "basic",
+    "candles_limit": 1000,
+    "sr_merge_threshold": 0.005,
+    "max_resistance": 10,
+    "max_support": 10,
+    "ttl_seconds": 300
+  }
+}
