@@ -1,181 +1,361 @@
-# Options Trading - Bybit Data Processing
+# Live Support/Resistance Dashboard 📊
 
-## Project Status: Data Processing ✅ Complete | S&R Detection 🔄 Next
+Real-time crypto support and resistance level detection and visualization system using Bybit options and kline data.
 
----
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
 
-## What Was Completed
+## 🎯 Features
 
-### 1. **Data Streaming Script** ✅
-- Real-time WebSocket streaming from Bybit
-- Historical data fetch (1000 candles per symbol/interval)
-- Redis storage with optimized pipeline batching
-- Config-driven settings
+- **Live Data Collection**
+  - Real-time kline (candlestick) data streaming from Bybit
+  - Live options market data tracking (BTC, ETH, SOL)
+  - WebSocket-based continuous data updates
 
-### 2. **Files Created**
+- **Dual S/R Detection System**
+  - **Technical S/R**: Swing high/low, round numbers (interval-based: 1min, 5min, 15min, 1hr, 4hr, Daily)
+  - **Sentiment S/R**: Options open interest walls (interval-independent)
 
-| File | Purpose |
-|------|---------|
-| `config.json` | Configuration (edit symbols, intervals, Redis settings) |
-| `bybit_kline_stream+historical_data.py` | Original working version with Redis |
-| `bybit_kline_stream_optimized.py` | **Recommended** - 6-7× faster with pipeline batching |
-| `bybit_kline_stream_ultra.py` | PID file protection + health checks |
-| `IMPROVEMENTS.md` | Detailed optimization explanations |
-| `TEST_RESULTS.md` | Complete test results and performance metrics |
+- **Interactive Web Dashboard**
+  - Side-by-side technical and sentiment S/R visualization
+  - Real-time price updates
+  - Combined chart showing all S/R levels
+  - Multi-symbol support (BTCUSDT, ETHUSDT, SOLUSDT)
+  - Auto-refresh every 60 seconds
 
-### 3. **Redis Structure**
+## 📸 Screenshots
 
-**Confirmed Candles** (Sorted Sets):
+### Live Dashboard
+The dashboard displays two panels:
+- **Left Panel**: Technical S/R based on selected timeframe
+- **Right Panel**: Sentiment S/R from options market (OI walls)
+
 ```
-Key: "1.BTCUSDT", "5.ETHUSDT", "D.SOLUSDT", etc.
-Format: {interval}.{symbol}
-Data: JSON {"o": "111500", "h": "111600", "l": "111400", "c": "111550", "v": "234.5"}
-Score: timestamp (milliseconds)
-Limit: 1000 candles per key
+┌─────────────────────────────────────────────────────────────┐
+│  📊 Live S/R Dashboard                                      │
+├─────────────────────────────────────────────────────────────┤
+│  Symbol: [BTCUSDT ▼]  Interval: [15 min ▼]  [🔄 Refresh]  │
+├─────────────────────────────────────────────────────────────┤
+│  Current Price: $111,110.00                                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─── Technical S/R (15 min) ─┬─── Sentiment S/R ────┐    │
+│  │  📈 Resistance              │  📈 Resistance        │    │
+│  │  ├ $113,500 (+2.15%)       │  ├ $130,000 (+16.7%) │    │
+│  │  │  Swing High • 5 touches │  │  OI Wall • Put OI  │    │
+│  │  └ $112,000 (+0.80%)       │  └ $125,000 (+12.2%) │    │
+│  │                              │                       │    │
+│  │  📉 Support                  │  📉 Support          │    │
+│  │  ├ $110,000 (-1.00%)       │  ├ $100,000 (-10.0%) │    │
+│  │  └ $109,000 (-1.90%)       │  │  OI Wall • Call OI │    │
+│  └─────────────────────────────┴──────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Unconfirmed Candles** (Strings):
-```
-Key: "1.BTCUSDT:latest"
-Data: JSON {"ts": 1760536079999, "o": "...", "h": "...", "l": "...", "c": "...", "v": "..."}
-```
+## 🚀 Quick Start
 
----
+### Prerequisites
 
-## How to Use
+- Python 3.9+
+- Redis server
+- Internet connection (for Bybit API)
 
-### Start the Data Stream
+### Installation
+
+1. Clone the repository
 ```bash
-# Recommended version
-python bybit_kline_stream_optimized.py
-
-# With PID protection
-python bybit_kline_stream_ultra.py
-
-# Stop with Ctrl+C
+git clone https://github.com/yourusername/live_sr_dashboard.git
+cd live_sr_dashboard
 ```
 
-### Query Data from Redis
-```python
-import redis
-import json
-
-r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-
-# Get all confirmed candles for 1-min BTCUSDT
-candles = r.zrange("1.BTCUSDT", 0, -1, withscores=True)
-
-# Get latest unconfirmed candle
-latest = json.loads(r.get("1.BTCUSDT:latest"))
-
-# Get specific time range
-start_ts = 1760530000000
-end_ts = 1760535000000
-range_candles = r.zrangebyscore("1.BTCUSDT", start_ts, end_ts)
+2. Install dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-### Edit Configuration
-Edit `config.json`:
+3. Start Redis
+```bash
+redis-server --daemonize yes
+```
+
+4. Run the system
+```bash
+./scripts/start_system.sh
+```
+
+5. Open your browser
+```
+http://localhost:8080/live
+```
+
+## 📁 Project Structure
+
+```
+live_sr_dashboard/
+├── README.md                    # This file
+├── requirements.txt             # Python dependencies
+├── .gitignore                   # Git ignore rules
+│
+├── src/
+│   ├── data_collection/         # Live data collection
+│   │   ├── bybit_kline_stream.py      # Kline data streaming
+│   │   └── bybit_options_tracker.py   # Options data tracking
+│   │
+│   ├── sr_detectors/            # S/R detection engines
+│   │   ├── sr_detector_technical.py   # Technical analysis
+│   │   ├── sr_detector_sentiment.py   # Sentiment analysis
+│   │   └── sr_utils.py                # Utilities & Redis helpers
+│   │
+│   ├── sr_methods/              # S/R detection methods
+│   │   ├── technical/
+│   │   │   ├── swing_high_low.py      # Swing points detection
+│   │   │   └── round_numbers.py       # Psychological levels
+│   │   └── sentiment/
+│   │       └── oi_walls.py            # Open interest walls
+│   │
+│   └── webapp/                  # Web interface
+│       ├── app.py                     # Flask application
+│       └── templates/
+│           └── live_dashboard.html    # Dashboard UI
+│
+├── scripts/                     # Utility scripts
+│   ├── start_system.sh          # Start all services
+│   └── stop_system.sh           # Stop all services
+│
+├── config/                      # Configuration files
+│   └── config.json              # System configuration
+│
+└── logs/                        # Log files (auto-generated)
+```
+
+## 🔧 Configuration
+
+### System Configuration
+
+Edit `config/config.json` to customize:
+
 ```json
 {
-  "trading": {
-    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],  // Add/remove
-    "intervals": [1, 5, 15, 60, 240, "D"],          // Customize timeframes
-    "candle_limit": 1000                            // History size
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+  "intervals": ["1", "5", "15", "60", "240", "D"],
+  "redis": {
+    "host": "localhost",
+    "port": 6379
+  },
+  "webapp": {
+    "host": "0.0.0.0",
+    "port": 8080
   }
 }
 ```
 
----
+## 📊 How It Works
 
-## Performance Metrics
+### 1. Data Collection
 
-- **Startup**: 3-5 seconds (loads 18,000 candles)
-- **Memory**: 4.37 MB (Redis) + 39 MB (Python)
-- **CPU**: 0% idle
-- **Live Updates**: 2-5 updates/second per symbol
-- **Redis Calls**: 36 (vs 36,000 without optimization)
+**Kline Stream** (`bybit_kline_stream.py`)
+- Connects to Bybit WebSocket
+- Streams real-time candlestick data for all intervals
+- Stores in Redis sorted sets with timestamps
 
----
+**Options Tracker** (`bybit_options_tracker.py`)
+- Fetches all BTC/ETH/SOL options contracts
+- Subscribes to live ticker updates via WebSocket
+- Tracks: price, IV, Greeks, open interest, volume
+- Stores in Redis hashes
 
-## Next: Support & Resistance Detection
+### 2. S/R Detection
 
-### Approach to Implement
-- **Method**: Zone-based S&R (more realistic than exact prices)
-- **Sensitivity**: Moderate (filter noise, catch important levels)
-- **Output**: Levels + strength + touch count
-- **Update**: Periodic (every 1-5 min)
+**Technical S/R** (Interval-Based)
+- Analyzes last 1000 candles for each interval
+- Methods:
+  - Swing High/Low: Identifies local extrema
+  - Round Numbers: Psychological price levels
+- Merges nearby levels
+- Saves to Redis: `sr:technical:basic:{interval}.{symbol}`
 
-### Questions to Answer Before Implementation
-1. Which method? (Swing High/Low, Pivot Points, Zone-based, or All)
-2. Sensitivity level? (Conservative/Moderate/Aggressive)
-3. Output format? (Just prices, or with metadata)
-4. Update frequency? (Real-time, periodic, on-demand)
+**Sentiment S/R** (Options-Based)
+- Analyzes options open interest distribution
+- Detects OI walls (high concentration at strike prices)
+- Separates call/put walls (support/resistance)
+- Saves to Redis: `sr:sentiment:basic:{symbol}`
 
-### Recommended Next Steps
-```bash
-# 1. Create S&R detection script
-# - Read candles from Redis
-# - Calculate support/resistance zones
-# - Store results back in Redis or separate structure
+### 3. Web Dashboard
 
-# 2. Integrate with trading logic
-# - Query S&R levels
-# - Use for entry/exit signals
+**Flask Backend** (`app.py`)
+- API endpoints:
+  - `/api/sr/{symbol}/{interval}` - Technical S/R
+  - `/api/sentiment/{symbol}` - Sentiment S/R
+  - `/health` - System health check
+
+**Frontend** (`live_dashboard.html`)
+- Fetches both technical and sentiment data
+- Displays in two-column layout
+- Combined Chart.js visualization
+- Auto-refreshes every 60 seconds
+
+## 🔌 API Endpoints
+
+### Get Technical S/R
+```http
+GET /api/sr/{symbol}/{interval}
 ```
 
----
+**Example Response:**
+```json
+{
+  "resistance": [
+    {
+      "price": 113500.0,
+      "strength": 0.85,
+      "touches": 5,
+      "method": "Swing High"
+    }
+  ],
+  "support": [
+    {
+      "price": 110000.0,
+      "strength": 0.92,
+      "touches": 8,
+      "method": "Round Number"
+    }
+  ],
+  "metadata": {
+    "symbol": "BTCUSDT",
+    "interval": "15",
+    "current_price": 111110.0,
+    "candles_analyzed": 1000
+  }
+}
+```
 
-## Troubleshooting
+### Get Sentiment S/R
+```http
+GET /api/sentiment/{symbol}
+```
 
-### Redis not running
+**Example Response:**
+```json
+{
+  "resistance": [
+    {
+      "price": 130000.0,
+      "strength": 1.0,
+      "oi": 335,
+      "method": "OI Wall"
+    }
+  ],
+  "support": [
+    {
+      "price": 100000.0,
+      "strength": 1.0,
+      "oi": 147,
+      "method": "OI Wall"
+    }
+  ],
+  "metadata": {
+    "symbol": "BTCUSDT",
+    "current_price": 111443.0,
+    "options_analyzed": 682
+  }
+}
+```
+
+## 🛠️ Development
+
+### Running Individual Components
+
+**Start only kline stream:**
 ```bash
+python src/data_collection/bybit_kline_stream.py
+```
+
+**Start only options tracker:**
+```bash
+python src/data_collection/bybit_options_tracker.py
+```
+
+**Generate S/R data manually:**
+```bash
+# Technical S/R
+python src/sr_detectors/sr_detector_technical.py --all --mode basic --save
+
+# Sentiment S/R
+python src/sr_detectors/sr_detector_sentiment.py --all --mode basic
+```
+
+**Start only webapp:**
+```bash
+python src/webapp/app.py
+```
+
+### Testing Redis Data
+
+```bash
+# Check kline data
+redis-cli zrevrange "15.BTCUSDT" 0 0
+
+# Check options data
+redis-cli keys "option:BTC-*" | head -5
+
+# Check S/R data
+redis-cli keys "sr:*"
+
+# View specific S/R
+redis-cli get "sr:technical:basic:15.BTCUSDT"
+```
+
+## 🐛 Troubleshooting
+
+### Redis Connection Error
+```bash
+# Check if Redis is running
+redis-cli ping
+
+# Start Redis if not running
 redis-server --daemonize yes
-redis-cli ping  # Should return PONG
 ```
 
-### Multiple instances running
+### No Data in Dashboard
 ```bash
-# Kill all instances
-pkill -9 -f bybit_kline
+# Check if data collection is running
+ps aux | grep bybit
 
-# Remove PID file (ultra version only)
-rm -f /tmp/bybit_stream.pid
+# Check Redis for data
+redis-cli keys "*BTCUSDT"
+
+# Regenerate S/R data
+python src/sr_detectors/sr_detector_technical.py --all --mode basic --save
 ```
 
-### Check data
+### Port 8080 Already in Use
 ```bash
-# How many keys
-redis-cli DBSIZE
+# Find process using port 8080
+lsof -ti:8080
 
-# Check candle count
-redis-cli ZCARD "1.BTCUSDT"
-
-# View latest candle
-redis-cli GET "1.BTCUSDT:latest"
+# Kill the process
+kill $(lsof -ti:8080)
 ```
+
+## 📝 License
+
+MIT License - feel free to use this project for personal or commercial purposes.
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or submit a pull request.
+
+## 📧 Contact
+
+For questions or support, please open an issue on GitHub.
+
+## 🙏 Acknowledgments
+
+- [Bybit](https://www.bybit.com/) for providing excellent API and WebSocket services
+- [Chart.js](https://www.chartjs.org/) for visualization
+- [Flask](https://flask.palletsprojects.com/) for web framework
+- [Redis](https://redis.io/) for data storage
 
 ---
 
-## Database Recommendation
-
-**Redis** ✅ Chosen for:
-- Ultra-fast in-memory access (microseconds)
-- Sorted Sets perfect for time-series data
-- Simple CRUD operations
-- Easy size management (auto-remove oldest)
-
-**Why not others:**
-- PostgreSQL/TimescaleDB: Overkill for 1000-candle window
-- SQLite: Slower, single-threaded writes
-- MongoDB: More complex, slower than Redis
-
----
-
-## Contact & Notes
-
-**Status**: Production-ready
-**Performance Rating**: 9/10
-**Last Updated**: 2025-10-15
-
-All files saved in: `/Users/danish/PycharmProjects/options_trading/`
+**Built with ❤️ for crypto traders**

@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live S/R Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+            font-size: 0.85em;
+            text-transform: uppercase;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            font-size: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-group select:hover {
+            border-color: #2a5298;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 15px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 22px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .price-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .price-card h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .price-card .value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #1e3c72;
+        }
+
+        .price-card .subvalue {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .sr-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sr-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .sr-panel h2 {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.3em;
+            border-bottom: 3px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .sr-panel.technical h2 {
+            border-bottom-color: #2196F3;
+        }
+
+        .sr-panel.sentiment h2 {
+            border-bottom-color: #FF9800;
+        }
+
+        .sr-section {
+            margin-bottom: 20px;
+        }
+
+        .sr-section h3 {
+            font-size: 1em;
+            margin-bottom: 10px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .level-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .level-item.resistance {
+            background: linear-gradient(90deg, #ffebee 0%, #ffcdd2 100%);
+            border-left: 4px solid #f44336;
+        }
+
+        .level-item.support {
+            background: linear-gradient(90deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 4px solid #4caf50;
+        }
+
+        .level-item.technical.resistance {
+            border-left-color: #2196F3;
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        .level-item.technical.support {
+            border-left-color: #2196F3;
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+        }
+
+        .level-item.sentiment.resistance {
+            border-left-color: #FF9800;
+            background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%);
+        }
+
+        .level-item.sentiment.support {
+            border-left-color: #FF9800;
+            background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%);
+        }
+
+        .level-price {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .level-info {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .level-distance {
+            font-weight: 600;
+            font-size: 1.1em;
+            text-align: right;
+        }
+
+        .resistance .level-distance {
+            color: #f44336;
+        }
+
+        .support .level-distance {
+            color: #4caf50;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .chart-container h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 500px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #c62828;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .badge.technical {
+            background: #2196F3;
+            color: white;
+        }
+
+        .badge.sentiment {
+            background: #FF9800;
+            color: white;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-color.technical {
+            background: #2196F3;
+        }
+
+        .legend-color.sentiment {
+            background: #FF9800;
+        }
+
+        .legend-color.current {
+            background: #9c27b0;
+        }
+
+        @media (max-width: 1200px) {
+            .sr-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 22px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Live S/R Dashboard</h1>
+            <p>Real-time Technical & Sentiment Support/Resistance Analysis</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="symbol">Symbol</label>
+                <select id="symbol">
+                    <option value="BTCUSDT" selected>BTCUSDT</option>
+                    <option value="ETHUSDT">ETHUSDT</option>
+                    <option value="SOLUSDT">SOLUSDT</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="interval">Timeframe (Technical S/R)</label>
+                <select id="interval">
+                    <option value="1">1 minute</option>
+                    <option value="5">5 minutes</option>
+                    <option value="15" selected>15 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="240">4 hours</option>
+                    <option value="D">Daily</option>
+                </select>
+            </div>
+
+            <button onclick="loadData()">🔄 Refresh</button>
+
+            <div class="auto-refresh">
+                <div class="status-indicator"></div>
+                <span id="auto-refresh-text">Auto-refresh: 60s</span>
+            </div>
+        </div>
+
+        <div id="info-section" style="display: none;">
+            <div class="price-card">
+                <h3>Current Price</h3>
+                <div class="value" id="current-price">-</div>
+                <div class="subvalue" id="last-updated">-</div>
+            </div>
+
+            <div class="sr-grid">
+                <div class="sr-panel technical">
+                    <h2>🔵 Technical S/R <span class="badge technical" id="technical-interval"></span></h2>
+
+                    <div class="sr-section">
+                        <h3>📈 Resistance</h3>
+                        <div id="technical-resistance"></div>
+                    </div>
+
+                    <div class="sr-section">
+                        <h3>📉 Support</h3>
+                        <div id="technical-support"></div>
+                    </div>
+                </div>
+
+                <div class="sr-panel sentiment">
+                    <h2>🟠 Sentiment S/R <span class="badge sentiment">Options Data</span></h2>
+
+                    <div class="sr-section">
+                        <h3>📈 Resistance (OI Walls)</h3>
+                        <div id="sentiment-resistance"></div>
+                    </div>
+
+                    <div class="sr-section">
+                        <h3>📉 Support (OI Walls)</h3>
+                        <div id="sentiment-support"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Combined S/R Chart</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color technical"></div>
+                        <span>Technical S/R</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color sentiment"></div>
+                        <span>Sentiment S/R (OI Walls)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color current"></div>
+                        <span>Current Price</span>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="combinedChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Loading data...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let chart = null;
+        let autoRefreshInterval = null;
+        let countdownInterval = null;
+        let secondsLeft = 60;
+
+        function formatPrice(price) {
+            return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDistance(price, currentPrice) {
+            const dist = ((price - currentPrice) / currentPrice) * 100;
+            const sign = dist > 0 ? '+' : '';
+            return sign + dist.toFixed(2) + '%';
+        }
+
+        function getIntervalLabel(interval) {
+            const labels = {
+                '1': '1 min',
+                '5': '5 min',
+                '15': '15 min',
+                '60': '1 hour',
+                '240': '4 hours',
+                'D': 'Daily'
+            };
+            return labels[interval] || interval;
+        }
+
+        async function loadData() {
+            const symbol = document.getElementById('symbol').value;
+            const interval = document.getElementById('interval').value;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('info-section').style.display = 'none';
+
+            try {
+                // Fetch both technical and sentiment data in parallel
+                const [technicalResponse, sentimentResponse] = await Promise.all([
+                    fetch(`/api/sr/${symbol}/${interval}`),
+                    fetch(`/api/sentiment/${symbol}`)
+                ]);
+
+                let technicalData = null;
+                let sentimentData = null;
+                let errors = [];
+
+                // Handle technical data
+                if (technicalResponse.ok) {
+                    technicalData = await technicalResponse.json();
+                } else {
+                    errors.push('Technical S/R data not available');
+                }
+
+                // Handle sentiment data
+                if (sentimentResponse.ok) {
+                    sentimentData = await sentimentResponse.json();
+                } else {
+                    errors.push('Sentiment S/R data not available');
+                }
+
+                if (!technicalData && !sentimentData) {
+                    throw new Error(errors.join('; '));
+                }
+
+                displayData(technicalData, sentimentData, errors);
+
+                // Reset auto-refresh countdown
+                resetAutoRefresh();
+
+            } catch (error) {
+                document.getElementById('error').textContent = 'Error loading data: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayData(technicalData, sentimentData, errors) {
+            const interval = document.getElementById('interval').value;
+
+            // Get current price from whichever data is available
+            const currentPrice = technicalData?.metadata?.current_price || sentimentData?.metadata?.current_price || 0;
+
+            // Update price card
+            document.getElementById('current-price').textContent = formatPrice(currentPrice);
+
+            if (technicalData) {
+                document.getElementById('last-updated').textContent = 'Updated: ' + technicalData.timestamp_readable;
+            } else if (sentimentData) {
+                document.getElementById('last-updated').textContent = 'Updated: ' + sentimentData.timestamp_readable;
+            }
+
+            // Update interval badge
+            document.getElementById('technical-interval').textContent = getIntervalLabel(interval);
+
+            // Display technical S/R
+            if (technicalData) {
+                displayTechnicalLevels(technicalData, currentPrice);
+            } else {
+                document.getElementById('technical-resistance').innerHTML = '<div class="no-data">No technical data available</div>';
+                document.getElementById('technical-support').innerHTML = '<div class="no-data">No technical data available</div>';
+            }
+
+            // Display sentiment S/R
+            if (sentimentData) {
+                displaySentimentLevels(sentimentData, currentPrice);
+            } else {
+                document.getElementById('sentiment-resistance').innerHTML = '<div class="no-data">No sentiment data available</div>';
+                document.getElementById('sentiment-support').innerHTML = '<div class="no-data">No sentiment data available</div>';
+            }
+
+            // Create combined chart
+            createCombinedChart(technicalData, sentimentData, currentPrice);
+
+            // Show errors if any
+            if (errors.length > 0) {
+                document.getElementById('error').textContent = 'Partial data loaded: ' + errors.join('; ');
+                document.getElementById('error').style.display = 'block';
+            }
+
+            document.getElementById('info-section').style.display = 'block';
+        }
+
+        function displayTechnicalLevels(data, currentPrice) {
+            // Resistance
+            const resistanceLevels = data.resistance.filter(r => r.price > currentPrice).slice(0, 10);
+            const resistanceHTML = resistanceLevels.map(r => `
+                <div class="level-item technical resistance">
+                    <div>
+                        <div class="level-price">${formatPrice(r.price)}</div>
+                        <div class="level-info">${r.method} • ${r.touches} touches • Strength: ${r.strength.toFixed(2)}</div>
+                    </div>
+                    <div class="level-distance">${formatDistance(r.price, currentPrice)}</div>
+                </div>
+            `).join('');
+            document.getElementById('technical-resistance').innerHTML = resistanceHTML || '<div class="no-data">No resistance levels above current price</div>';
+
+            // Support
+            const supportLevels = data.support.filter(s => s.price < currentPrice).slice(0, 10);
+            const supportHTML = supportLevels.map(s => `
+                <div class="level-item technical support">
+                    <div>
+                        <div class="level-price">${formatPrice(s.price)}</div>
+                        <div class="level-info">${s.method} • ${s.touches} touches • Strength: ${s.strength.toFixed(2)}</div>
+                    </div>
+                    <div class="level-distance">${formatDistance(s.price, currentPrice)}</div>
+                </div>
+            `).join('');
+            document.getElementById('technical-support').innerHTML = supportHTML || '<div class="no-data">No support levels below current price</div>';
+        }
+
+        function displaySentimentLevels(data, currentPrice) {
+            // Resistance
+            const resistanceLevels = data.resistance.filter(r => r.price > currentPrice).slice(0, 10);
+            const resistanceHTML = resistanceLevels.map(r => `
+                <div class="level-item sentiment resistance">
+                    <div>
+                        <div class="level-price">${formatPrice(r.price)}</div>
+                        <div class="level-info">OI: ${r.oi.toLocaleString()} • Strength: ${r.strength.toFixed(2)}</div>
+                    </div>
+                    <div class="level-distance">${formatDistance(r.price, currentPrice)}</div>
+                </div>
+            `).join('');
+            document.getElementById('sentiment-resistance').innerHTML = resistanceHTML || '<div class="no-data">No resistance levels above current price</div>';
+
+            // Support
+            const supportLevels = data.support.filter(s => s.price < currentPrice).slice(0, 10);
+            const supportHTML = supportLevels.map(s => `
+                <div class="level-item sentiment support">
+                    <div>
+                        <div class="level-price">${formatPrice(s.price)}</div>
+                        <div class="level-info">OI: ${s.oi.toLocaleString()} • Strength: ${s.strength.toFixed(2)}</div>
+                    </div>
+                    <div class="level-distance">${formatDistance(s.price, currentPrice)}</div>
+                </div>
+            `).join('');
+            document.getElementById('sentiment-support').innerHTML = supportHTML || '<div class="no-data">No support levels below current price</div>';
+        }
+
+        function createCombinedChart(technicalData, sentimentData, currentPrice) {
+            const ctx = document.getElementById('combinedChart').getContext('2d');
+
+            // Destroy existing chart
+            if (chart) {
+                chart.destroy();
+            }
+
+            const annotations = {};
+
+            // Add current price line
+            annotations.currentPrice = {
+                type: 'line',
+                yMin: currentPrice,
+                yMax: currentPrice,
+                borderColor: '#9c27b0',
+                borderWidth: 3,
+                borderDash: [10, 5],
+                label: {
+                    content: 'Current: ' + formatPrice(currentPrice),
+                    enabled: true,
+                    position: 'end',
+                    backgroundColor: '#9c27b0'
+                }
+            };
+
+            // Add technical resistance lines
+            if (technicalData) {
+                technicalData.resistance.filter(r => r.price > currentPrice).slice(0, 5).forEach((r, i) => {
+                    annotations[`tech_r${i}`] = {
+                        type: 'line',
+                        yMin: r.price,
+                        yMax: r.price,
+                        borderColor: 'rgba(33, 150, 243, 0.6)',
+                        borderWidth: 2,
+                        label: {
+                            content: formatPrice(r.price),
+                            enabled: true,
+                            position: 'start',
+                            backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                            color: 'white'
+                        }
+                    };
+                });
+
+                // Add technical support lines
+                technicalData.support.filter(s => s.price < currentPrice).slice(0, 5).forEach((s, i) => {
+                    annotations[`tech_s${i}`] = {
+                        type: 'line',
+                        yMin: s.price,
+                        yMax: s.price,
+                        borderColor: 'rgba(33, 150, 243, 0.6)',
+                        borderWidth: 2,
+                        label: {
+                            content: formatPrice(s.price),
+                            enabled: true,
+                            position: 'start',
+                            backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                            color: 'white'
+                        }
+                    };
+                });
+            }
+
+            // Add sentiment resistance lines
+            if (sentimentData) {
+                sentimentData.resistance.filter(r => r.price > currentPrice).slice(0, 5).forEach((r, i) => {
+                    annotations[`sent_r${i}`] = {
+                        type: 'line',
+                        yMin: r.price,
+                        yMax: r.price,
+                        borderColor: 'rgba(255, 152, 0, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            content: formatPrice(r.price),
+                            enabled: true,
+                            position: 'end',
+                            backgroundColor: 'rgba(255, 152, 0, 0.8)',
+                            color: 'white'
+                        }
+                    };
+                });
+
+                // Add sentiment support lines
+                sentimentData.support.filter(s => s.price < currentPrice).slice(0, 5).forEach((s, i) => {
+                    annotations[`sent_s${i}`] = {
+                        type: 'line',
+                        yMin: s.price,
+                        yMax: s.price,
+                        borderColor: 'rgba(255, 152, 0, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            content: formatPrice(s.price),
+                            enabled: true,
+                            position: 'end',
+                            backgroundColor: 'rgba(255, 152, 0, 0.8)',
+                            color: 'white'
+                        }
+                    };
+                });
+            }
+
+            // Calculate y-axis range
+            const allPrices = [currentPrice];
+            if (technicalData) {
+                allPrices.push(...technicalData.resistance.map(r => r.price));
+                allPrices.push(...technicalData.support.map(s => s.price));
+            }
+            if (sentimentData) {
+                allPrices.push(...sentimentData.resistance.map(r => r.price));
+                allPrices.push(...sentimentData.support.map(s => s.price));
+            }
+
+            const minPrice = Math.min(...allPrices) * 0.97;
+            const maxPrice = Math.max(...allPrices) * 1.03;
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['', 'Current', ''],
+                    datasets: [{
+                        label: 'Price',
+                        data: [null, currentPrice, null],
+                        borderColor: '#9c27b0',
+                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                        pointRadius: 10,
+                        pointHoverRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: annotations
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: minPrice,
+                            max: maxPrice,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatPrice(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function resetAutoRefresh() {
+            // Clear existing intervals
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            secondsLeft = 60;
+
+            // Update countdown
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                document.getElementById('auto-refresh-text').textContent = `Auto-refresh: ${secondsLeft}s`;
+
+                if (secondsLeft <= 0) {
+                    secondsLeft = 60;
+                }
+            }, 1000);
+
+            // Auto refresh every 60 seconds
+            autoRefreshInterval = setInterval(loadData, 60000);
+        }
+
+        // Load data on page load
+        window.onload = () => {
+            loadData();
+        };
+
+        // Cleanup on page unload
+        window.onbeforeunload = () => {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+        };
+    </script>
+</body>
+</html>

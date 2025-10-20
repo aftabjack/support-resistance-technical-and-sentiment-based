@@ -1,0 +1,48 @@
+{
+  "bybit": {
+    "testnet": false,
+    "channel_type": "linear",
+    "category": "linear"
+  },
+  "trading": {
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "intervals": ["1", "5", "15", "60", "240", "D"],
+    "candle_limit": 1000
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "db": 0,
+    "clear_on_startup": false
+  },
+  "webapp": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "debug": true
+  },
+  "mode": "basic",
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+  "intervals": ["1", "5", "15", "60", "240", "D"],
+  "candles_limit": 1000,
+  "methods": {
+    "basic": {
+      "swing_high_low": {
+        "enabled": true,
+        "lookback": 5,
+        "min_touches": 2,
+        "touch_threshold": 0.002
+      },
+      "round_numbers": {
+        "enabled": true,
+        "max_distance_pct": 0.05,
+        "touch_threshold": 0.003
+      }
+    }
+  },
+  "output": {
+    "merge_threshold": 0.005,
+    "max_resistance": 10,
+    "max_support": 10,
+    "ttl_seconds": 300
+  }
+}
