@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EMA S/R Viewer</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        h1 { color: #333; }
+        .level { padding: 15px; margin: 10px 0; background: #f9f9f9; border-left: 4px solid #f39c12; border-radius: 5px; }
+        .price { font-size: 1.5em; font-weight: bold; color: #333; }
+        .ema-badge { background: #f39c12; color: white; padding: 3px 8px; border-radius: 3px; font-size: 0.8em; }
+        .methods { margin-top: 10px; font-size: 0.9em; color: #666; }
+        button { padding: 10px 20px; margin: 5px; font-size: 1em; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 EMA-Enhanced S/R Levels</h1>
+        <div>
+            <button onclick="load('BTCUSDT')">BTC</button>
+            <button onclick="load('ETHUSDT')">ETH</button>
+            <button onclick="load('SOLUSDT')">SOL</button>
+        </div>
+        <div id="data">Loading...</div>
+    </div>
+    <script>
+        async function load(symbol) {
+            document.getElementById('data').innerHTML = 'Loading...';
+            const response = await fetch(`http://localhost:8080/api/ultimate/${symbol}/15`);
+            const data = await response.json();
+            
+            const emaLevels = [...data.resistance, ...data.support].filter(l => l.ema_confluence);
+            
+            let html = `<h2>${symbol} - $${data.metadata.current_price.toFixed(2)}</h2>`;
+            html += `<p>EMA-Boosted Levels: ${emaLevels.length}</p><hr>`;
+            
+            emaLevels.forEach((level, i) => {
+                const dist = ((level.price - data.metadata.current_price) / data.metadata.current_price * 100).toFixed(2);
+                html += `
+                    <div class="level">
+                        <div class="price">
+                            $${level.price.toFixed(2)} 
+                            <span class="ema-badge">${level.ema_confluence.count}x EMA</span>
+                        </div>
+                        <div>Distance: ${dist}% | Strength: ${level.strength.toFixed(2)} | Boost: +${level.ema_confluence.boost}</div>
+                        <div class="methods">EMAs: ${level.ema_confluence.periods.join(', ')}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('data').innerHTML = html || '<p>No EMA-boosted levels</p>';
+        }
+        load('BTCUSDT');
+    </script>
+</body>
+</html>

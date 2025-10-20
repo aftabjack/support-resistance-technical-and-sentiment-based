@@ -1,0 +1,31 @@
+2025-10-16 16:17:45,161 - INFO - ============================================================
+2025-10-16 16:17:45,162 - INFO - Bybit Options Tracker Started
+2025-10-16 16:17:45,162 - INFO - ============================================================
+2025-10-16 16:17:45,166 - INFO - ✓ Redis connected
+2025-10-16 16:17:45,166 - INFO - Fetching symbols from Bybit API...
+2025-10-16 16:17:45,467 - INFO -   Fetched 698 BTC options
+2025-10-16 16:17:45,809 - INFO -   Fetched 782 ETH options
+2025-10-16 16:17:45,993 - INFO -   Fetched 448 SOL options
+2025-10-16 16:17:45,999 - INFO - ✓ Cached 1928 symbols
+2025-10-16 16:17:45,999 - INFO - Tracking 1928 options symbols
+2025-10-16 16:17:45,999 - INFO - WebSocket Unified V5 attempting connection...
+2025-10-16 16:17:46,511 - INFO - Websocket connected
+2025-10-16 16:17:46,511 - INFO - WebSocket Unified V5 connected
+2025-10-16 16:17:46,512 - INFO - Subscribing to 1928 symbols in 193 batches...
+2025-10-16 16:17:51,023 - INFO -   Subscribed 10/193 batches
+2025-10-16 16:17:56,035 - INFO -   Subscribed 20/193 batches
+2025-10-16 16:18:01,046 - INFO -   Subscribed 30/193 batches
+2025-10-16 16:18:06,185 - INFO -   Subscribed 40/193 batches
+2025-10-16 16:18:11,317 - INFO -   Subscribed 50/193 batches
+2025-10-16 16:18:16,355 - INFO -   Subscribed 60/193 batches
+2025-10-16 16:18:21,449 - INFO -   Subscribed 70/193 batches
+2025-10-16 16:18:26,896 - INFO -   Subscribed 80/193 batches
+2025-10-16 16:18:32,524 - INFO -   Subscribed 90/193 batches
+2025-10-16 16:18:38,234 - INFO -   Subscribed 100/193 batches
+2025-10-16 16:18:44,427 - INFO -   Subscribed 110/193 batches
+2025-10-16 16:18:50,100 - INFO -   Subscribed 120/193 batches
+2025-10-16 16:18:55,993 - INFO -   Subscribed 130/193 batches
+2025-10-16 16:19:00,859 - ERROR - error from callback <function _WebSocketManager._connect.<locals>.<lambda> at 0x7fdcd8816280>: 'tickers.ETH-18OCT25-3825-P-USDT'
+2025-10-16 16:19:00,957 - ERROR - error from callback <function _WebSocketManager._connect.<locals>.<lambda> at 0x7fdcd8816430>: 'tickers.ETH-18OCT25-3825-P-USDT'
+2025-10-16 16:19:00,957 - ERROR - 'tickers.ETH-18OCT25-3825-P-USDT' - goodbye
+2025-10-17 17:49:56,609 - INFO - Shutdown signal received

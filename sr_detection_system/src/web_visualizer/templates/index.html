@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S/R Visualizer - Support & Resistance Levels</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-group select:hover {
+            border-color: #667eea;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 24px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .info-card h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .info-card .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .info-card .subvalue {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 500px;
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+        }
+
+        .levels-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .levels-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .level-item:hover {
+            transform: translateX(5px);
+        }
+
+        .level-item.resistance {
+            background: linear-gradient(90deg, #fff5f5 0%, #ffe5e5 100%);
+            border-left: 4px solid #ef4444;
+        }
+
+        .level-item.support {
+            background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 4px solid #22c55e;
+        }
+
+        .level-price {
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+
+        .level-details {
+            text-align: right;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .level-distance {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .resistance .level-price {
+            color: #ef4444;
+        }
+
+        .support .level-price {
+            color: #22c55e;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .badge.strong {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.moderate {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.weak {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .levels-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 S/R Visualizer</h1>
+            <p>Real-time Support & Resistance Level Analysis</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="symbol">Symbol</label>
+                <select id="symbol">
+                    {% for sym in symbols %}
+                    <option value="{{ sym }}" {% if sym == 'BTCUSDT' %}selected{% endif %}>{{ sym }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="interval">Timeframe</label>
+                <select id="interval">
+                    {% for int in intervals %}
+                    <option value="{{ int.value }}" {% if int.value == '15' %}selected{% endif %}>{{ int.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button onclick="loadData()">🔄 Load Data</button>
+        </div>
+
+        <div id="info-section" style="display: none;">
+            <div class="info-cards">
+                <div class="info-card">
+                    <h3>Current Price</h3>
+                    <div class="value" id="current-price">-</div>
+                    <div class="subvalue" id="last-updated">-</div>
+                </div>
+                <div class="info-card">
+                    <h3>Nearest Resistance</h3>
+                    <div class="value" id="nearest-resistance">-</div>
+                    <div class="subvalue" id="resistance-distance">-</div>
+                </div>
+                <div class="info-card">
+                    <h3>Nearest Support</h3>
+                    <div class="value" id="nearest-support">-</div>
+                    <div class="subvalue" id="support-distance">-</div>
+                </div>
+                <div class="info-card">
+                    <h3>Processing Time</h3>
+                    <div class="value" id="processing-time">-</div>
+                    <div class="subvalue" id="candles-analyzed">-</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Price Chart with S/R Levels</h2>
+                <div class="chart-wrapper">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="levels-grid">
+                <div class="levels-card">
+                    <h2>📈 Resistance Levels</h2>
+                    <div id="resistance-levels"></div>
+                </div>
+                <div class="levels-card">
+                    <h2>📉 Support Levels</h2>
+                    <div id="support-levels"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Loading data...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        function formatPrice(price) {
+            return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDistance(price, currentPrice) {
+            const dist = ((price - currentPrice) / currentPrice) * 100;
+            const sign = dist > 0 ? '+' : '';
+            return sign + dist.toFixed(2) + '%';
+        }
+
+        function getStrengthBadge(strength) {
+            if (strength >= 0.8) return '<span class="badge strong">Strong</span>';
+            if (strength >= 0.5) return '<span class="badge moderate">Moderate</span>';
+            return '<span class="badge weak">Weak</span>';
+        }
+
+        async function loadData() {
+            const symbol = document.getElementById('symbol').value;
+            const interval = document.getElementById('interval').value;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('info-section').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/sr/${symbol}/${interval}`);
+
+                if (!response.ok) {
+                    throw new Error('Data not found');
+                }
+
+                const data = await response.json();
+                displayData(data);
+
+            } catch (error) {
+                document.getElementById('error').textContent = 'Error loading data: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayData(data) {
+            const currentPrice = data.metadata.current_price;
+
+            // Update info cards
+            document.getElementById('current-price').textContent = formatPrice(currentPrice);
+            document.getElementById('last-updated').textContent = 'Updated: ' + data.timestamp_readable;
+            document.getElementById('processing-time').textContent = data.metadata.processing_time_ms.toFixed(2) + 'ms';
+            document.getElementById('candles-analyzed').textContent = data.metadata.candles_analyzed + ' candles analyzed';
+
+            // Find nearest levels
+            const nearestResistance = data.resistance.find(r => r.price > currentPrice);
+            const nearestSupport = [...data.support].reverse().find(s => s.price < currentPrice);
+
+            if (nearestResistance) {
+                document.getElementById('nearest-resistance').textContent = formatPrice(nearestResistance.price);
+                document.getElementById('resistance-distance').textContent = formatDistance(nearestResistance.price, currentPrice);
+            } else {
+                document.getElementById('nearest-resistance').textContent = 'None';
+                document.getElementById('resistance-distance').textContent = '-';
+            }
+
+            if (nearestSupport) {
+                document.getElementById('nearest-support').textContent = formatPrice(nearestSupport.price);
+                document.getElementById('support-distance').textContent = formatDistance(nearestSupport.price, currentPrice);
+            } else {
+                document.getElementById('nearest-support').textContent = 'None';
+                document.getElementById('support-distance').textContent = '-';
+            }
+
+            // Display resistance levels
+            const resistanceLevels = data.resistance.filter(r => r.price > currentPrice).slice(0, 10);
+            const resistanceHTML = resistanceLevels.map(r => `
+                <div class="level-item resistance">
+                    <div>
+                        <div class="level-price">${formatPrice(r.price)}</div>
+                        <div style="font-size: 0.85em; color: #666;">${r.method} • ${r.touches} touches ${getStrengthBadge(r.strength)}</div>
+                    </div>
+                    <div class="level-details">
+                        <div class="level-distance">${formatDistance(r.price, currentPrice)}</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('resistance-levels').innerHTML = resistanceHTML || '<p style="color: #999;">No resistance levels above current price</p>';
+
+            // Display support levels
+            const supportLevels = data.support.filter(s => s.price < currentPrice).slice(0, 10);
+            const supportHTML = supportLevels.map(s => `
+                <div class="level-item support">
+                    <div>
+                        <div class="level-price">${formatPrice(s.price)}</div>
+                        <div style="font-size: 0.85em; color: #666;">${s.method} • ${s.touches} touches ${getStrengthBadge(s.strength)}</div>
+                    </div>
+                    <div class="level-details">
+                        <div class="level-distance">${formatDistance(s.price, currentPrice)}</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('support-levels').innerHTML = supportHTML || '<p style="color: #999;">No support levels below current price</p>';
+
+            // Create chart
+            createChart(data);
+
+            document.getElementById('info-section').style.display = 'block';
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            // Destroy existing chart
+            if (chart) {
+                chart.destroy();
+            }
+
+            const currentPrice = data.metadata.current_price;
+
+            // Prepare annotations for S/R levels
+            const annotations = {};
+
+            // Add current price line
+            annotations.currentPrice = {
+                type: 'line',
+                yMin: currentPrice,
+                yMax: currentPrice,
+                borderColor: 'blue',
+                borderWidth: 3,
+                borderDash: [5, 5],
+                label: {
+                    content: 'Current: ' + formatPrice(currentPrice),
+                    enabled: true,
+                    position: 'end',
+                    backgroundColor: 'blue'
+                }
+            };
+
+            // Add resistance lines
+            data.resistance.filter(r => r.price > currentPrice).slice(0, 5).forEach((r, i) => {
+                annotations[`resistance${i}`] = {
+                    type: 'line',
+                    yMin: r.price,
+                    yMax: r.price,
+                    borderColor: 'rgba(239, 68, 68, 0.5)',
+                    borderWidth: 2,
+                    label: {
+                        content: formatPrice(r.price),
+                        enabled: true,
+                        position: 'start',
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                    }
+                };
+            });
+
+            // Add support lines
+            data.support.filter(s => s.price < currentPrice).slice(0, 5).forEach((s, i) => {
+                annotations[`support${i}`] = {
+                    type: 'line',
+                    yMin: s.price,
+                    yMax: s.price,
+                    borderColor: 'rgba(34, 197, 94, 0.5)',
+                    borderWidth: 2,
+                    label: {
+                        content: formatPrice(s.price),
+                        enabled: true,
+                        position: 'start',
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)'
+                    }
+                };
+            });
+
+            // Calculate y-axis range
+            const allPrices = [
+                currentPrice,
+                ...data.resistance.map(r => r.price),
+                ...data.support.map(s => s.price)
+            ];
+            const minPrice = Math.min(...allPrices) * 0.98;
+            const maxPrice = Math.max(...allPrices) * 1.02;
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['', 'Current', ''],
+                    datasets: [{
+                        label: 'Price',
+                        data: [null, currentPrice, null],
+                        borderColor: 'blue',
+                        backgroundColor: 'rgba(66, 133, 244, 0.1)',
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        annotation: {
+                            annotations: annotations
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: minPrice,
+                            max: maxPrice,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatPrice(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load data on page load
+        window.onload = () => {
+            loadData();
+            // Auto-refresh every 60 seconds
+            setInterval(loadData, 60000);
+        };
+    </script>
+</body>
+</html>

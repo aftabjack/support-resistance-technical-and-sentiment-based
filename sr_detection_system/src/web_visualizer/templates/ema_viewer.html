@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMA-Enhanced S/R Levels</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .symbol-selector {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .symbol-selector button {
+            padding: 12px 30px;
+            margin: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .symbol-selector button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .symbol-selector button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .metadata {
+            padding: 20px;
+            background: #f8f9fa;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .meta-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .meta-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .levels-container {
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #333;
+            border-left: 5px solid #667eea;
+            padding-left: 15px;
+        }
+
+        .resistance-title {
+            border-left-color: #e74c3c;
+        }
+
+        .support-title {
+            border-left-color: #27ae60;
+        }
+
+        .level-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .level-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .level-card.ema-boosted {
+            border-color: #f39c12;
+            background: linear-gradient(to right, #fff9e6 0%, white 10%);
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .level-price {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .level-distance {
+            font-size: 1.1em;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .resistance .level-distance {
+            background: #ffe6e6;
+            color: #e74c3c;
+        }
+
+        .support .level-distance {
+            background: #e6f7ee;
+            color: #27ae60;
+        }
+
+        .level-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .detail-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .detail-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .methods-list {
+            margin-top: 15px;
+        }
+
+        .methods-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .method-tag {
+            display: inline-block;
+            padding: 5px 12px;
+            margin: 3px;
+            background: #e9ecef;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #333;
+        }
+
+        .method-tag.ema {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .ema-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .strength-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #e74c3c;
+            font-size: 1.2em;
+        }
+
+        .no-ema {
+            text-align: center;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            color: #666;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 EMA-Enhanced S/R Levels</h1>
+            <p>Support & Resistance with Moving Average Confluence</p>
+        </header>
+
+        <div class="symbol-selector">
+            <button onclick="loadSymbol('BTCUSDT')" class="active" id="btn-BTCUSDT">BTC</button>
+            <button onclick="loadSymbol('ETHUSDT')" id="btn-ETHUSDT">ETH</button>
+            <button onclick="loadSymbol('SOLUSDT')" id="btn-SOLUSDT">SOL</button>
+        </div>
+
+        <div id="metadata" class="metadata"></div>
+        <div id="content" class="levels-container">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        let currentSymbol = 'BTCUSDT';
+
+        async function loadSymbol(symbol) {
+            currentSymbol = symbol;
+
+            // Update button states
+            document.querySelectorAll('.symbol-selector button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-${symbol}`).classList.add('active');
+
+            // Show loading
+            document.getElementById('content').innerHTML = '<div class="loading">Loading...</div>';
+            document.getElementById('metadata').innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/ultimate/${symbol}/15`);
+                const data = await response.json();
+
+                displayMetadata(data.metadata);
+                displayLevels(data);
+            } catch (error) {
+                document.getElementById('content').innerHTML =
+                    `<div class="error">❌ Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        function displayMetadata(meta) {
+            const html = `
+                <div class="meta-item">
+                    <div class="meta-label">Current Price</div>
+                    <div class="meta-value">$${meta.current_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Processing Time</div>
+                    <div class="meta-value">${meta.processing_time_ms}ms</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Methods Used</div>
+                    <div class="meta-value">${meta.methods_used.length}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Klines Analyzed</div>
+                    <div class="meta-value">${meta.klines_analyzed}</div>
+                </div>
+            `;
+            document.getElementById('metadata').innerHTML = html;
+        }
+
+        function displayLevels(data) {
+            const emaResistance = data.resistance.filter(r => r.ema_confluence);
+            const emaSupport = data.support.filter(s => s.ema_confluence);
+
+            let html = '';
+
+            if (emaResistance.length === 0 && emaSupport.length === 0) {
+                html = `
+                    <div class="no-ema">
+                        <h2>ℹ️ No EMA-Boosted Levels Found</h2>
+                        <p style="margin-top: 15px;">None of the confluence zones aligned with EMAs (20, 50, 100, 200)</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">This is normal - only ~15-20% of levels get EMA boost</p>
+                    </div>
+                `;
+            } else {
+                // Resistance
+                if (emaResistance.length > 0) {
+                    html += '<h2 class="section-title resistance-title">📈 EMA-Boosted Resistance</h2>';
+                    emaResistance.forEach((level, i) => {
+                        html += createLevelCard(level, 'resistance', data.metadata.current_price, i + 1);
+                    });
+                }
+
+                // Support
+                if (emaSupport.length > 0) {
+                    html += '<h2 class="section-title support-title" style="margin-top: 40px;">📉 EMA-Boosted Support</h2>';
+                    emaSupport.forEach((level, i) => {
+                        html += createLevelCard(level, 'support', data.metadata.current_price, i + 1);
+                    });
+                }
+            }
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function createLevelCard(level, type, currentPrice, index) {
+            const distance = type === 'resistance'
+                ? ((level.price - currentPrice) / currentPrice * 100)
+                : ((currentPrice - level.price) / currentPrice * 100);
+
+            const distanceStr = type === 'resistance'
+                ? `+${distance.toFixed(2)}%`
+                : `-${distance.toFixed(2)}%`;
+
+            const originalMethods = level.methods.filter(m => !m.startsWith('ema_'));
+            const emaMethods = level.methods.filter(m => m.startsWith('ema_'));
+
+            let methodsHtml = '';
+            if (originalMethods.length > 0) {
+                methodsHtml += '<div class="methods-label">Original Methods:</div>';
+                originalMethods.forEach(m => {
+                    methodsHtml += `<span class="method-tag">${m}</span>`;
+                });
+            }
+
+            if (emaMethods.length > 0) {
+                methodsHtml += '<div class="methods-label" style="margin-top: 10px;">✨ EMA Confluence:</div>';
+                emaMethods.forEach(m => {
+                    methodsHtml += `<span class="method-tag ema">${m.replace('ema_', 'EMA ')}</span>`;
+                });
+            }
+
+            return `
+                <div class="level-card ema-boosted ${type}">
+                    <div class="level-header">
+                        <div class="level-price">
+                            #${index} $${level.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            <span class="ema-badge">✨ ${level.ema_confluence.count}x EMA</span>
+                        </div>
+                        <div class="level-distance">${distanceStr}</div>
+                    </div>
+
+                    <div class="level-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Strength</div>
+                            <div class="detail-value">${level.strength.toFixed(2)}</div>
+                            <div class="strength-bar">
+                                <div class="strength-fill" style="width: ${level.strength * 100}%"></div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">EMA Boost</div>
+                            <div class="detail-value">+${level.ema_confluence.boost.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Total Methods</div>
+                            <div class="detail-value">${level.num_methods}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Confluence Score</div>
+                            <div class="detail-value">${level.confluence_score.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <div class="methods-list">
+                        ${methodsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load initial data
+        loadSymbol('BTCUSDT');
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => loadSymbol(currentSymbol), 30000);
+    </script>
+</body>
+</html>

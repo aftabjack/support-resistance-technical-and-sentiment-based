@@ -1,0 +1,112 @@
+{
+  "mode": "basic",
+  "intervals": ["1", "5", "15", "60", "240", "D"],
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+  "candles_limit": 1000,
+
+  "methods": {
+    "basic": {
+      "swing_high_low": {
+        "enabled": true,
+        "lookback": 5,
+        "min_touches": 2,
+        "touch_threshold": 0.002,
+        "description": "Detects swing highs and lows as S/R levels"
+      },
+      "round_numbers": {
+        "enabled": true,
+        "max_distance_pct": 0.05,
+        "touch_threshold": 0.003,
+        "description": "Detects psychologically significant round numbers"
+      }
+    },
+
+    "medium": {
+      "swing_high_low": {
+        "enabled": true,
+        "lookback": 5,
+        "min_touches": 2,
+        "touch_threshold": 0.002
+      },
+      "round_numbers": {
+        "enabled": true,
+        "max_distance_pct": 0.05,
+        "touch_threshold": 0.003
+      },
+      "volume_profile": {
+        "enabled": true,
+        "bins": 50,
+        "value_area_pct": 0.70,
+        "min_volume_pct": 0.05,
+        "description": "Detects high volume areas (POC, value area)"
+      }
+    },
+
+    "high": {
+      "swing_high_low": {
+        "enabled": true,
+        "lookback": 5,
+        "min_touches": 2,
+        "touch_threshold": 0.002
+      },
+      "round_numbers": {
+        "enabled": true,
+        "max_distance_pct": 0.05,
+        "touch_threshold": 0.003
+      },
+      "volume_profile": {
+        "enabled": true,
+        "bins": 50,
+        "value_area_pct": 0.70,
+        "min_volume_pct": 0.05
+      },
+      "pivot_points": {
+        "enabled": true,
+        "types": ["standard", "fibonacci", "camarilla"],
+        "description": "Calculates pivot points and support/resistance levels"
+      },
+      "fibonacci": {
+        "enabled": true,
+        "lookback": 100,
+        "levels": [0.236, 0.382, 0.5, 0.618, 0.786],
+        "description": "Fibonacci retracement levels"
+      },
+      "moving_average": {
+        "enabled": true,
+        "periods": [20, 50, 100, 200],
+        "types": ["SMA", "EMA"],
+        "touch_threshold": 0.002,
+        "description": "Key moving averages as dynamic S/R"
+      },
+      "bollinger_bands": {
+        "enabled": true,
+        "period": 20,
+        "std_dev": 2,
+        "description": "Bollinger Bands as S/R levels"
+      }
+    }
+  },
+
+  "output": {
+    "merge_threshold": 0.005,
+    "max_resistance": 10,
+    "max_support": 10,
+    "ttl_seconds": 300,
+    "redis_key_pattern": "sr:technical:{mode}:{interval}.{symbol}",
+    "description": "Output configuration and limits"
+  },
+
+  "update_strategy": {
+    "type": "interval_triggered",
+    "fallback_update_seconds": 300,
+    "description": "Update when new candle arrives, fallback to 5min"
+  },
+
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2025-10-17",
+    "description": "Technical S/R detection configuration (interval-specific)",
+    "total_combinations": 18,
+    "notes": "6 intervals × 3 symbols = 18 separate calculations"
+  }
+}

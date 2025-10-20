@@ -1,0 +1,37 @@
+# S/R Detection System - Python Dependencies
+
+# Bybit API client
+pybit==5.12.0
+
+# WebSocket and HTTP clients
+websocket-client==1.7.0
+requests==2.31.0
+
+# Redis client
+redis==5.0.1
+
+# Web Visualizer
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# JSON handling (built-in, but for clarity)
+# json (standard library)
+
+# Logging and utilities (standard library)
+# logging (standard library)
+# datetime (standard library)
+# time (standard library)
+
+# Optional: For future phases
+# FastAPI (for Phase 8 - Visualizer)
+# fastapi==0.109.0
+# uvicorn==0.27.0
+# websockets==12.0
+
+# Optional: For testing
+# pytest==7.4.4
+# pytest-asyncio==0.23.3
+
+# Optional: For data analysis (Phase 2 - Volume Profile)
+# numpy==1.26.3
+# pandas==2.2.0

@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # Redis service
+  redis:
+    image: redis:7-alpine
+    container_name: sr-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Kline data collection
+  kline-stream:
+    build: .
+    container_name: sr-kline-stream
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    command: python src/bybit_kline_stream_ultra.py
+    restart: unless-stopped
+
+  # Options data collection
+  options-tracker:
+    build: .
+    container_name: sr-options-tracker
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    command: python src/bybit_options_tracker.py
+    restart: unless-stopped
+
+  # S/R Detection - Runs all detectors periodically
+  sr-detector:
+    build: .
+    container_name: sr-detector
+    depends_on:
+      - kline-stream
+      - options-tracker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    # Run all S/R detection methods every 5 minutes
+    command: >
+      sh -c "
+        echo 'Waiting for data collection to start...' &&
+        sleep 30 &&
+        while true; do
+          echo '1/4 Running Technical S/R detection (swing high/low)...' &&
+          python src/sr_core/sr_detector_technical.py --all --mode basic --save &&
+          echo '2/4 Running Sentiment S/R detection (OI walls)...' &&
+          python src/sr_core/sr_detector_sentiment.py --all --mode basic --save &&
+          echo '3/4 Running Pivot S/R detection (pivots, prev high/low)...' &&
+          python src/sr_core/sr_detector_pivots.py --all --mode basic &&
+          echo '4/4 Running Ultimate S/R detection (all methods + confluence)...' &&
+          python src/sr_core/sr_detector_ultimate.py --all --interval 15 --mode confluence &&
+          echo '✅ All S/R detection complete. Sleeping for 5 minutes...' &&
+          sleep 300;
+        done
+      "
+    restart: unless-stopped
+
+  # Options Refresh Scheduler (daily at 8 AM UTC)
+  options-scheduler:
+    image: docker:cli
+    container_name: sr-options-scheduler
+    depends_on:
+      - options-tracker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./scripts/docker_cron_scheduler.sh:/scheduler.sh:ro
+      - ./logs:/logs
+    command: sh /scheduler.sh
+    restart: unless-stopped
+
+  # Web Visualizer
+  web-visualizer:
+    build: .
+    container_name: sr-web-visualizer
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./src/web_visualizer:/app/src/web_visualizer
+    ports:
+      - "8080:8080"
+    command: python src/web_visualizer/app.py
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: sr-network
